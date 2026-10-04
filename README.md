@@ -19,6 +19,19 @@ Configure the same credential set in both places:
 
 This template intentionally uses the same variable names locally and in GitHub so development and deployment do not drift into separate configuration schemes.
 
+### `CLOUDFLARE_API_TOKEN` Permissions
+
+Use two tokens: a bootstrap token for the first deploy, then a scoped token for every deploy after that. Only the value changes; the variable name stays `CLOUDFLARE_API_TOKEN` in GitHub Actions and locally.
+
+| Stage | Permissions |
+| --- | --- |
+| Bootstrap (first deploy) | Account → Workers → Admin, scoped to all Workers in the account, and Account → D1 → Edit (`D1 Write` in the API). This deploy creates the Worker and the D1 database `[project-name]-prod`. |
+| Scoped (recommended afterwards) | Account → Workers → Editor, scoped to the individual Worker `[project-name]`, and Account → D1 → Edit (`D1 Write`). Covers `wrangler deploy`, `wrangler secret put`, and all `wrangler d1` commands. |
+
+Keep both tokens scoped to this account with no Zone permissions, and delete the bootstrap token after switching.
+
+The account must already have a `workers.dev` subdomain before the first deploy. On a brand-new account, register one at `https://dash.cloudflare.com/<account-id>/workers/onboarding`; GitHub Actions cannot do this, and the first upload fails with error 10063 until it exists.
+
 ## Template Defaults
 
 - The repository name, folder name, and Worker name are all treated as `[project-name]`
@@ -59,6 +72,8 @@ npm run typecheck
 ```
 
 ### Deploy
+
+The first deploy creates both the Worker and the D1 database, so it requires the bootstrap token described in Human Setup Required. Switch to the scoped token once the Worker exists.
 
 After you push or merge to `main`, the deploy workflow will:
 
